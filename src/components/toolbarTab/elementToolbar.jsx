@@ -1,5 +1,5 @@
 import { Server, Box, Component, User, ExternalLink } from 'lucide-react';
-import useStore from '../store';
+import useStore from '../../store';
 
 const Toolbar = () => {
   const { addElement, currentLevel } = useStore();
