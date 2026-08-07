@@ -35,15 +35,16 @@ The header contains the model title, C4 level selector, and action menus:
 ![Header](docs/screenshots/header-chromium-darwin.png)
 
 **Features:**
-- **Title**: Double-click to edit the model name
-- **Level Selector**: Switch between Context, Container, Component, and Code views
-- **Export Menu**: Export to JSON, Structurizr, PlantUML, Mermaid, PNG, or SVG
-- **Import Button**: Load existing models
-- **Layout Menu**: Auto-arrange elements using various algorithms
+- **Title**: Double-click to rename the active diagram
+- **Level Selector**: Creates and selects a new diagram at Context, Container, Component, or Code without clearing the previous diagram
+- **Export Menu**: BAC4 and Structurizr JSON export the workspace; PlantUML, Mermaid, PNG, and SVG export only the active diagram
+- **Import Button**: Loads legacy flat models or normalized multi-diagram workspaces
+- **Layout Menu**: Auto-arranges elements in the active diagram only
 
-### Toolbar - Adding Elements
+### Toolbar - Elements Tab
 
-The toolbar on the left shows available element types based on the current C4 level:
+The left toolbar is a tabbed panel. **Elements** is selected by default and retains keyboard-accessible tab semantics.
+It shows draggable element types based on the current C4 level:
 
 **Context Level:**
 ![Toolbar Context](docs/screenshots/toolbar-context-chromium-darwin.png)
@@ -58,9 +59,10 @@ The toolbar on the left shows available element types based on the current C4 le
 ![Toolbar Code](docs/screenshots/toolbar-code-chromium-darwin.png)
 
 **To add an element:**
-1. Select the appropriate C4 level
-2. Drag an element from the toolbar onto the canvas
-3. The element appears with a default name
+1. Open the **Elements** tab.
+2. Choose the diagram level or a level-specific diagram.
+3. Drag an element from the toolbar onto the canvas.
+4. The element becomes a member of the active diagram.
 
 ### Element Types
 
@@ -128,11 +130,10 @@ Click the Export dropdown to see all available formats:
 ![Export Menu](docs/screenshots/export-menu-open-chromium-darwin.png)
 
 **Export Formats:**
-- **JSON**: Native BAC4 format for saving/loading
-- **Structurizr JSON**: Compatible with Structurizr DSL
-- **PlantUML**: Text-based diagrams
-- **Mermaid**: Mermaid diagram syntax
-- **PNG/SVG**: Image exports for documentation
+- **JSON**: Native BAC4 workspace, including global records and diagram memberships
+- **Structurizr JSON**: Complete workspace compatible with Structurizr tooling
+- **PlantUML** and **Mermaid**: Active diagram only
+- **PNG/SVG**: Active diagram image exports
 
 ### Auto Layout
 

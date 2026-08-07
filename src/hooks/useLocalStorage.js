@@ -17,9 +17,6 @@ const sanitizeElement = (el) => {
     description: el.description || '',
     technology: el.technology || '',
     tags: Array.isArray(el.tags) ? el.tags : [],
-    position: el.position && typeof el.position === 'object'
-      ? { x: Number(el.position.x) || 0, y: Number(el.position.y) || 0 }
-      : { x: 0, y: 0 },
     width: el.width ? Number(el.width) : undefined,
     height: el.height ? Number(el.height) : undefined,
   };
@@ -43,6 +40,32 @@ const sanitizeRelationship = (rel) => {
   };
 };
 
+const sanitizeDiagram = (diagram) => {
+  if (!diagram || typeof diagram !== 'object') return null;
+
+  return {
+    id: typeof diagram.id === 'string' ? diagram.id : '',
+    name: typeof diagram.name === 'string' ? diagram.name : '',
+    level: typeof diagram.level === 'string' ? diagram.level : '',
+    elements: Array.isArray(diagram.elements)
+      ? diagram.elements
+        .filter((member) => typeof member?.id === 'string')
+        .map((member) => ({
+          id: member.id,
+          position: {
+            x: Number.isFinite(member.position?.x) ? member.position.x : 0,
+            y: Number.isFinite(member.position?.y) ? member.position.y : 0,
+          },
+        }))
+      : [],
+    relationships: Array.isArray(diagram.relationships)
+      ? diagram.relationships
+        .filter((member) => typeof member?.id === 'string')
+        .map((member) => ({ id: member.id }))
+      : [],
+  };
+};
+
 /**
  * Sanitize the entire model to remove any circular references or non-serializable data
  */
@@ -55,7 +78,9 @@ const sanitizeModel = (model) => {
   };
 
   return {
-    metadata: model.metadata || { name: 'New C4 Model', version: '1.0', author: 'Solution Architect' },
+    metadata: model.metadata,
+    currentDiagram: typeof model.currentDiagram === 'string' ? model.currentDiagram : '',
+    diagrams: sanitizeArray(model.diagrams, sanitizeDiagram),
     systems: sanitizeArray(model.systems, sanitizeElement),
     containers: sanitizeArray(model.containers, sanitizeElement),
     components: sanitizeArray(model.components, sanitizeElement),
@@ -102,14 +127,7 @@ export const useLocalStorage = () => {
     const interval = setInterval(() => {
       const rawModel = exportModel();
       const model = sanitizeModel(rawModel);
-      // Only save if there's actually data
-      if (
-        model.systems?.length > 0 ||
-        model.containers?.length > 0 ||
-        model.components?.length > 0 ||
-        model.people?.length > 0 ||
-        model.externalSystems?.length > 0
-      ) {
+      if (model) {
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(model));
           console.log('Model auto-saved to local storage');
@@ -127,13 +145,7 @@ export const useLocalStorage = () => {
     const handleBeforeUnload = () => {
       const rawModel = exportModel();
       const model = sanitizeModel(rawModel);
-      if (
-        model.systems?.length > 0 ||
-        model.containers?.length > 0 ||
-        model.components?.length > 0 ||
-        model.people?.length > 0 ||
-        model.externalSystems?.length > 0
-      ) {
+      if (model) {
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(model));
         } catch (error) {

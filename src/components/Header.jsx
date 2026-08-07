@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Download, Upload, FileJson, Settings, FileImage, FileCode, FileText, Layout } from 'lucide-react';
-import useStore from '../store';
+import useStore, { DEFAULT_METADATA } from '../store';
 import { exportAsPNG, exportAsSVG, generatePlantUML, generateMermaid, generateMarkdown, exportAsHTML, exportAsDrawio } from '../utils/exportUtils';
 import { applyHierarchicalLayout, applyGridLayout, applyCircularLayout, applyForceLayout } from '../utils/layoutUtils';
 import { exportToStructurizr, importFromStructurizr } from '../utils/structurizrUtils';
 
 const Header = () => {
-  const { metadata, setMetadata, currentLevel, setCurrentLevel, exportModel, importModel, clearAll, getAllElements, updateElement, relationships } = useStore();
+  const { metadata, setMetadata, currentLevel, addDiagram, exportModel, exportCurrentDiagramModel, importModel, clearAll, getAllCurrentDiagramElements, getCurrentDiagramRelationships, updateCurrentDiagramElementPosition } = useStore();
   const [showSettings, setShowSettings] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
@@ -21,26 +21,9 @@ const Header = () => {
   ];
 
   const handleLevelChange = (newLevel) => {
-    const elements = getAllElements();
-
-    // If there are elements, warn the user
-    if (elements.length > 0) {
-      const confirmed = window.confirm(
-        `Changing diagram level will clear all elements from the canvas.\n\n` +
-        `Current elements: ${elements.length}\n\n` +
-        `Are you sure you want to proceed? This cannot be undone.`
-      );
-
-      if (!confirmed) {
-        return; // User cancelled
-      }
-
-      // User confirmed - clear all elements and relationships
-      clearAll();
+    if (newLevel !== currentLevel) {
+      addDiagram(DEFAULT_METADATA.name, newLevel);
     }
-
-    // Change the level
-    setCurrentLevel(newLevel);
   };
 
   const handleExportJSON = () => {
@@ -97,13 +80,13 @@ const Header = () => {
   };
 
   const handleClearAll = () => {
-    if (window.confirm('Are you sure you want to clear all elements? This cannot be undone.')) {
+    if (window.confirm('Are you sure you want to clear this diagram? This cannot be undone.')) {
       clearAll();
     }
   };
 
   const handleExportPlantUML = () => {
-    const model = exportModel();
+    const model = exportCurrentDiagramModel();
     const plantuml = generatePlantUML(model);
     const blob = new Blob([plantuml], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -116,7 +99,7 @@ const Header = () => {
   };
 
   const handleExportMermaid = () => {
-    const model = exportModel();
+    const model = exportCurrentDiagramModel();
     const mermaid = generateMermaid(model);
     const blob = new Blob([mermaid], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -129,7 +112,7 @@ const Header = () => {
   };
 
   const handleExportMarkdown = () => {
-    const model = exportModel();
+    const model = exportCurrentDiagramModel();
     const markdown = generateMarkdown(model);
     const blob = new Blob([markdown], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
@@ -142,25 +125,25 @@ const Header = () => {
   };
 
   const handleExportHTML = () => {
-    const model = exportModel();
+    const model = exportCurrentDiagramModel();
     exportAsHTML(model);
     setShowExportMenu(false);
   };
 
   const handleExportPNG = async () => {
-    const model = exportModel();
+    const model = exportCurrentDiagramModel();
     await exportAsPNG(model);
     setShowExportMenu(false);
   };
 
   const handleExportSVG = async () => {
-    const model = exportModel();
+    const model = exportCurrentDiagramModel();
     await exportAsSVG(model);
     setShowExportMenu(false);
   };
 
   const handleExportDrawio = () => {
-    const model = exportModel();
+    const model = exportCurrentDiagramModel();
     exportAsDrawio(model);
     setShowExportMenu(false);
   };
@@ -190,12 +173,11 @@ const Header = () => {
   };
 
   const applyLayout = (layoutFn) => {
-    const elements = getAllElements();
-    const layoutedElements = layoutFn(elements, relationships);
+    const elements = getAllCurrentDiagramElements();
+    const layoutedElements = layoutFn(elements, getCurrentDiagramRelationships());
 
-    // Update each element with new position
-    layoutedElements.forEach((el) => {
-      updateElement(el.type, el.id, { position: el.position });
+    layoutedElements.forEach((element) => {
+      updateCurrentDiagramElementPosition(element.id, element.position);
     });
 
     setShowLayoutMenu(false);

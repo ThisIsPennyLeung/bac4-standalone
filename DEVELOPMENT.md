@@ -244,10 +244,21 @@ Before committing changes, test these scenarios:
 - [ ] Properties panel should only show Name field (no technology/description)
 - [ ] Annotations should be visible at all C4 levels
 
-### Level Changes
-- [ ] Change from Context to Container - verify warning appears if elements exist
-- [ ] Change levels - verify appropriate elements are shown/hidden
-- [ ] Change levels - verify toolbar buttons update
+### Toolbar Tabs
+- [ ] Elements tab is selected by default and exposes a selected tab state
+- [ ] Tab receives focus and activates with keyboard controls
+- [ ] Change levels - verify appropriate elements are shown/hidden in Elements
+- [ ] Change levels - verify Elements palette updates
+
+### Multi-Diagram Workspace
+- [ ] Change level - verify a new empty diagram is selected and the prior diagram remains intact
+- [ ] Switch diagrams by stable ID - verify membership and active level are restored
+- [ ] Clear a diagram - verify only its orphaned records are removed
+- [ ] Layout a diagram - verify only its member element positions change
+- [ ] Export BAC4 and Structurizr JSON - verify complete workspace records are present
+- [ ] Export a text or image format - verify only active-diagram members are present
+- [ ] Import legacy flat data - verify it becomes one valid diagram
+- [ ] Refresh and restore - verify current diagram and all memberships persist
 
 ### Persistence
 - [ ] Make changes - refresh page - verify changes persist

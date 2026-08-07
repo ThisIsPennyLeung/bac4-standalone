@@ -56,12 +56,11 @@ function App() {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   const {
-    getAllElements,
-    relationships,
-    updateElement,
+    getAllCurrentDiagramElements,
+    getCurrentDiagramRelationships,
+    updateCurrentDiagramElementPosition,
     setSelectedElement,
     setSelectedEdge,
-    selectedElement,
     currentLevel,
   } = useStore();
 
@@ -75,14 +74,16 @@ function App() {
     // For now, annotations will not persist their size on refresh
   }, [onNodesChange]);
 
-  // Subscribe to individual store arrays to trigger re-renders
+  // Subscribe to store records and active-diagram membership to trigger projections.
   const systems = useStore((state) => state.systems);
   const containers = useStore((state) => state.containers);
   const components = useStore((state) => state.components);
   const people = useStore((state) => state.people);
   const externalSystems = useStore((state) => state.externalSystems);
+  const relationships = useStore((state) => state.relationships);
+  const currentDiagram = useStore((state) => state.currentDiagram);
+  const diagrams = useStore((state) => state.diagrams);
   const getVisibleElements = useStore((state) => state.getVisibleElements);
-
   // Enable local storage auto-save
   useLocalStorage();
 
@@ -92,18 +93,21 @@ function App() {
     const newNodes = elements.map((el) => ({
       id: el.id,
       type: 'c4Node',
-      position: el.position || { x: Math.random() * 400, y: Math.random() * 300 },
+      position: el.position,
       data: {
         ...el,
         label: el.name,
       },
     }));
     setNodes(newNodes);
-  }, [systems, containers, components, people, externalSystems, currentLevel, getVisibleElements, setNodes]);
+  }, [systems, containers, components, people, externalSystems, currentDiagram, diagrams, currentLevel, getVisibleElements, setNodes]);
 
   useEffect(() => {
     const elements = getVisibleElements();
-    const newEdges = relationships.map((rel) => {
+    const visibleNodeIds = new Set(elements.map((element) => element.id));
+    const newEdges = getCurrentDiagramRelationships()
+      .filter((relationship) => visibleNodeIds.has(relationship.from) && visibleNodeIds.has(relationship.to))
+      .map((rel) => {
       // Determine arrow markers based on arrowDirection
       const arrowDirection = rel.arrowDirection || 'right';
       let markerStart = undefined;
@@ -156,22 +160,19 @@ function App() {
           fillOpacity: 0.9,
         },
       };
-    });
+      });
     setEdges(newEdges);
-  }, [relationships, setEdges, getVisibleElements, systems, containers, components, people, externalSystems]);
+  }, [relationships, currentDiagram, diagrams, setEdges, getCurrentDiagramRelationships, getVisibleElements, systems, containers, components, people, externalSystems]);
 
   // Handle node drag
   const onNodeDragStop = useCallback(
     (event, node) => {
-      const element = getAllElements().find((el) => el.id === node.id);
-      if (element) {
-        // Extract only x and y to avoid any circular references from React Flow
-        updateElement(element.type, element.id, {
-          position: { x: node.position.x, y: node.position.y }
-        });
-      }
+      updateCurrentDiagramElementPosition(node.id, {
+        x: node.position.x,
+        y: node.position.y,
+      });
     },
-    [getAllElements, updateElement]
+    [updateCurrentDiagramElementPosition]
   );
 
   // Handle edge connection
@@ -215,7 +216,7 @@ function App() {
   const onNodeClick = useCallback(
     (event, node) => {
       try {
-        const element = getAllElements().find((el) => el.id === node.id);
+        const element = getAllCurrentDiagramElements().find((el) => el.id === node.id);
         if (element) {
           console.log('[BAC4] Node clicked:', element.type, element.id);
           setSelectedElement(element);
@@ -228,7 +229,7 @@ function App() {
         setSelectedElement(null);
       }
     },
-    [getAllElements, setSelectedElement]
+    [getAllCurrentDiagramElements, setSelectedElement]
   );
 
   // Handle edge click

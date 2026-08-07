@@ -1,5 +1,14 @@
 import { create } from 'zustand';
 
+export const DEFAULT_METADATA = {
+  name: 'New C4 Model',
+  version: '1.0',
+  author: 'Solution Architect',
+};
+
+const LEVELS = new Set(['context', 'container', 'component', 'code']);
+const DEFAULT_POSITION = { x: 0, y: 0 };
+
 // Helper function to get the correct store property name for a type
 const getPropertyName = (type) => {
   const mapping = {
@@ -12,19 +21,267 @@ const getPropertyName = (type) => {
   return mapping[type] || `${type}s`;
 };
 
+const ELEMENT_TYPES = [
+  'system',
+  'container',
+  'component',
+  'person',
+  'externalSystem',
+];
+const COLLECTION_NAMES = ELEMENT_TYPES.map(getPropertyName);
+
+const createId = (prefix) => (
+  `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+);
+
+const isPosition = (position) => (
+  Number.isFinite(position?.x) && Number.isFinite(position?.y)
+);
+
+const positionOrDefault = (position) => {
+  if (isPosition(position)) {
+    return { x: position.x, y: position.y };
+  }
+
+  return { ...DEFAULT_POSITION };
+};
+
+const createDiagram = (name = DEFAULT_METADATA.name, level = 'context') => ({
+  id: createId('diagram'),
+  name: typeof name === 'string' && name.trim() ? name.trim() : DEFAULT_METADATA.name,
+  level: LEVELS.has(level) ? level : 'context',
+  elements: [],
+  relationships: [],
+});
+
+const getStoredElements = (state) => [
+  ...state.systems,
+  ...state.containers,
+  ...state.components,
+  ...state.people,
+  ...state.externalSystems,
+];
+
+const elementIdsIn = (diagrams) => {
+  const elementIds = new Set();
+
+  diagrams.forEach((diagram) => {
+    diagram.elements.forEach((element) => elementIds.add(element.id));
+  });
+
+  return elementIds;
+};
+
+const relationshipIdsIn = (diagrams) => {
+  const relationshipIds = new Set();
+
+  diagrams.forEach((diagram) => {
+    diagram.relationships.forEach((relationship) => relationshipIds.add(relationship.id));
+  });
+
+  return relationshipIds;
+};
+
+const withoutPosition = (element) => {
+  const content = { ...element };
+  delete content.position;
+  return content;
+};
+
+const collectGarbage = (state) => {
+  const referencedElementIds = elementIdsIn(state.diagrams);
+  const referencedRelationshipIds = relationshipIdsIn(state.diagrams);
+
+  return {
+    systems: state.systems.filter((element) => referencedElementIds.has(element.id)),
+    containers: state.containers.filter((element) => referencedElementIds.has(element.id)),
+    components: state.components.filter((element) => referencedElementIds.has(element.id)),
+    people: state.people.filter((element) => referencedElementIds.has(element.id)),
+    externalSystems: state.externalSystems.filter((element) => referencedElementIds.has(element.id)),
+    relationships: state.relationships.filter((relationship) => (
+      referencedRelationshipIds.has(relationship.id)
+    )),
+  };
+};
+
+const normalizeCollections = (model) => {
+  const seenElementIds = new Set();
+  const collections = {};
+
+  ELEMENT_TYPES.forEach((type) => {
+    const propertyName = getPropertyName(type);
+    const elements = Array.isArray(model?.[propertyName]) ? model[propertyName] : [];
+
+    collections[propertyName] = elements.flatMap((element) => {
+      if (
+        !element ||
+        typeof element !== 'object' ||
+        typeof element.id !== 'string' ||
+        !element.id ||
+        seenElementIds.has(element.id)
+      ) {
+        return [];
+      }
+
+      seenElementIds.add(element.id);
+      return [{ ...withoutPosition(element), type }];
+    });
+  });
+
+  const elementIds = new Set(getStoredElements(collections).map((element) => element.id));
+  const seenRelationshipIds = new Set();
+  const relationships = Array.isArray(model?.relationships) ? model.relationships : [];
+
+  const normalizedRelationships = relationships.flatMap((relationship) => {
+    if (
+      !relationship ||
+      typeof relationship !== 'object' ||
+      typeof relationship.id !== 'string' ||
+      !relationship.id ||
+      seenRelationshipIds.has(relationship.id) ||
+      !elementIds.has(relationship.from) ||
+      !elementIds.has(relationship.to)
+    ) {
+      return [];
+    }
+
+    seenRelationshipIds.add(relationship.id);
+    return [{ ...relationship }];
+  });
+
+  return {
+    ...collections,
+    relationships: normalizedRelationships,
+    elementIds,
+  };
+};
+
+const normalizeMembers = (diagram, normalized) => {
+  const seenElementIds = new Set();
+  const elements = (Array.isArray(diagram.elements) ? diagram.elements : []).flatMap((member) => {
+    if (
+      !member ||
+      typeof member.id !== 'string' ||
+      !normalized.elementIds.has(member.id) ||
+      seenElementIds.has(member.id)
+    ) {
+      return [];
+    }
+
+    seenElementIds.add(member.id);
+    return [{
+      id: member.id,
+      position: positionOrDefault(member.position),
+    }];
+  });
+
+  const activeElementIds = new Set(elements.map((element) => element.id));
+  const seenRelationshipIds = new Set();
+  const relationships = (Array.isArray(diagram.relationships) ? diagram.relationships : []).flatMap((member) => {
+    const relationship = normalized.relationships.find(
+      (candidate) => candidate.id === member?.id
+    );
+
+    if (
+      !relationship ||
+      seenRelationshipIds.has(relationship.id) ||
+      !activeElementIds.has(relationship.from) ||
+      !activeElementIds.has(relationship.to)
+    ) {
+      return [];
+    }
+
+    seenRelationshipIds.add(relationship.id);
+    return [{ id: relationship.id }];
+  });
+
+  return { elements, relationships };
+};
+
+const normalizeModel = (model) => {
+  const normalized = normalizeCollections(model);
+  const metadata = {
+    ...DEFAULT_METADATA,
+    ...(model?.metadata && typeof model.metadata === 'object' ? model.metadata : {}),
+  };
+  const seenDiagramIds = new Set();
+  const diagramInput = Array.isArray(model?.diagrams) ? model.diagrams : [];
+
+  const diagrams = diagramInput.flatMap((diagram) => {
+    if (
+      !diagram ||
+      typeof diagram !== 'object' ||
+      typeof diagram.id !== 'string' ||
+      !diagram.id ||
+      seenDiagramIds.has(diagram.id) ||
+      !LEVELS.has(diagram.level)
+    ) {
+      return [];
+    }
+
+    seenDiagramIds.add(diagram.id);
+    const members = normalizeMembers(diagram, normalized);
+
+    return [{
+      id: diagram.id,
+      name: typeof diagram.name === 'string' && diagram.name.trim()
+        ? diagram.name.trim()
+        : DEFAULT_METADATA.name,
+      level: diagram.level,
+      ...members,
+    }];
+  });
+
+  const fallbackDiagram = {
+    id: createId('diagram'),
+    name: typeof metadata.name === 'string' && metadata.name.trim()
+      ? metadata.name.trim()
+      : DEFAULT_METADATA.name,
+    level: LEVELS.has(model?.currentLevel) ? model.currentLevel : 'context',
+    elements: getStoredElements(normalized).map((element) => ({
+      id: element.id,
+      position: positionOrDefault(element.position),
+    })),
+    relationships: normalized.relationships.map((relationship) => ({
+      id: relationship.id,
+    })),
+  };
+  const validDiagrams = diagrams.length ? diagrams : [fallbackDiagram];
+  const activeDiagram = validDiagrams.find(
+    (diagram) => diagram.id === model?.currentDiagram
+  ) || validDiagrams[0];
+  const state = {
+    metadata: { ...metadata, name: activeDiagram.name },
+    currentLevel: activeDiagram.level,
+    currentDiagram: activeDiagram.id,
+    diagrams: validDiagrams,
+    systems: normalized.systems,
+    containers: normalized.containers,
+    components: normalized.components,
+    people: normalized.people,
+    externalSystems: normalized.externalSystems,
+    relationships: normalized.relationships,
+    selectedElement: null,
+    selectedEdge: null,
+    warnings: [],
+  };
+
+  return { ...state, ...collectGarbage(state) };
+};
+
+const initialDiagram = createDiagram();
+
 const useStore = create((set, get) => ({
   // Debug mode - set to true during development to enable logging
   debugMode: false,
 
   // Project metadata
-  metadata: {
-    name: 'New C4 Model',
-    version: '1.0',
-    author: 'Solution Architect',
-  },
+  metadata: { ...DEFAULT_METADATA },
 
-  // Current C4 level (context, container, component, code)
-  currentLevel: 'context',
+  // Current diagram and C4 level
+  currentLevel: initialDiagram.level,
+  currentDiagram: initialDiagram.id,
+  diagrams: [initialDiagram],
 
   // Selected element for editing
   selectedElement: null,
@@ -46,9 +303,104 @@ const useStore = create((set, get) => ({
   warnings: [],
 
   // Actions
-  setMetadata: (metadata) => set({ metadata }),
+  setMetadata: (nextMetadata) => {
+    set((state) => {
+      const name = typeof nextMetadata?.name === 'string' && nextMetadata.name.trim()
+        ? nextMetadata.name.trim()
+        : state.metadata.name;
 
-  setCurrentLevel: (level) => set({ currentLevel: level }),
+      return {
+        metadata: { ...state.metadata, ...nextMetadata, name },
+        diagrams: state.diagrams.map((diagram) => (
+          diagram.id === state.currentDiagram ? { ...diagram, name } : diagram
+        )),
+      };
+    });
+  },
+
+  // Set the active diagram level
+  setCurrentLevel: (level) => {
+    if (!LEVELS.has(level)) {
+      return false;
+    }
+
+    set((state) => ({
+      currentLevel: level,
+      diagrams: state.diagrams.map((diagram) => (
+        diagram.id === state.currentDiagram ? { ...diagram, level } : diagram
+      )),
+    }));
+
+    return true;
+  },
+
+  // Add diagram
+  addDiagram: (name = DEFAULT_METADATA.name, level = get().currentLevel) => {
+    if (!LEVELS.has(level)) {
+      return null;
+    }
+
+    const newDiagram = createDiagram(name, level);
+    set((state) => ({
+      diagrams: [...state.diagrams, newDiagram],
+      currentDiagram: newDiagram.id,
+      currentLevel: newDiagram.level,
+      metadata: { ...state.metadata, name: newDiagram.name },
+      selectedElement: null,
+      selectedEdge: null,
+    }));
+
+    return newDiagram;
+  },
+
+  // Switch active diagram
+  switchDiagram: (id) => {
+    const diagram = get().diagrams.find((candidate) => candidate.id === id);
+
+    if (!diagram) {
+      return false;
+    }
+
+    set((state) => ({
+      currentDiagram: diagram.id,
+      currentLevel: diagram.level,
+      metadata: { ...state.metadata, name: diagram.name },
+      selectedElement: null,
+      selectedEdge: null,
+    }));
+
+    return true;
+  },
+
+  // Delete diagram
+  deleteDiagram: (id) => {
+    const state = get();
+
+    if (!state.diagrams.some((diagram) => diagram.id === id)) {
+      return false;
+    }
+
+    const diagrams = state.diagrams.filter((diagram) => diagram.id !== id);
+    const remainingDiagrams = diagrams.length ? diagrams : [createDiagram()];
+    const activeDiagram = id === state.currentDiagram
+      ? remainingDiagrams[0]
+      : remainingDiagrams.find((diagram) => diagram.id === state.currentDiagram)
+        || remainingDiagrams[0];
+    const nextState = { ...state, diagrams: remainingDiagrams };
+
+    set({
+      ...collectGarbage(nextState),
+      diagrams: remainingDiagrams,
+      currentDiagram: activeDiagram.id,
+      currentLevel: activeDiagram.level,
+      metadata: { ...state.metadata, name: activeDiagram.name },
+      selectedElement: null,
+      selectedEdge: null,
+      warnings: [],
+    });
+
+    return true;
+  },
 
   setSelectedElement: (element) => {
     const state = get();
@@ -67,32 +419,67 @@ const useStore = create((set, get) => ({
   },
 
   // Add element
-  addElement: (type, element) => {
-    const newElement = {
-      id: `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type,
-      ...element,
-    };
-
+  addElement: (type, element = {}) => {
     const propertyName = getPropertyName(type);
-    set((state) => ({
-      [propertyName]: [...state[propertyName], newElement],
-    }));
 
-    // Auto-switch to appropriate C4 level when adding elements
-    const state = get();
-    const currentLevel = state.currentLevel;
-
-    // Ensure the new element will be visible by switching levels if needed
-    if (type === 'container' && (currentLevel === 'context' || currentLevel === 'component' || currentLevel === 'code')) {
-      set({ currentLevel: 'container' });
-    } else if (type === 'component' && (currentLevel === 'context' || currentLevel === 'code')) {
-      set({ currentLevel: 'component' });
-    } else if (type === 'system' && currentLevel === 'code') {
-      set({ currentLevel: 'context' });
+    if (!COLLECTION_NAMES.includes(propertyName)) {
+      return null;
     }
 
+    const { position, ...content } = element;
+    const newElement = {
+      id: createId(type),
+      type,
+      ...content,
+    };
+
+    set((state) => ({
+      [propertyName]: [...state[propertyName], newElement],
+      diagrams: state.diagrams.map((diagram) => {
+        if (diagram.id !== state.currentDiagram) {
+          return diagram;
+        }
+
+        return {
+          ...diagram,
+          elements: [
+            ...diagram.elements,
+            { id: newElement.id, position: positionOrDefault(position) },
+          ],
+        };
+      }),
+    }));
+
     return newElement;
+  },
+
+  // Update element position in active diagram
+  updateCurrentDiagramElementPosition: (id, position) => {
+    if (!isPosition(position)) {
+      return false;
+    }
+
+    set((state) => ({
+      diagrams: state.diagrams.map((diagram) => {
+        if (diagram.id !== state.currentDiagram) {
+          return diagram;
+        }
+
+        return {
+          ...diagram,
+          elements: diagram.elements.map((element) => (
+            element.id === id
+              ? { ...element, position: { x: position.x, y: position.y } }
+              : element
+          )),
+        };
+      }),
+      selectedElement: state.selectedElement?.id === id
+        ? { ...state.selectedElement, position: { x: position.x, y: position.y } }
+        : state.selectedElement,
+    }));
+
+    return true;
   },
 
   // Update element
@@ -103,49 +490,103 @@ const useStore = create((set, get) => ({
     }
 
     const propertyName = getPropertyName(type);
-    set((state) => {
-      const updatedArray = state[propertyName].map((el) =>
-        el.id === id ? { ...el, ...updates } : el
-      );
 
-      // Also update selectedElement if it's the one being updated
-      const updatedElement = updatedArray.find((el) => el.id === id);
-      const newSelectedElement = state.selectedElement?.id === id ? updatedElement : state.selectedElement;
+    if (!COLLECTION_NAMES.includes(propertyName)) {
+      return false;
+    }
+
+    const semanticUpdates = { ...(updates || {}) };
+    delete semanticUpdates.position;
+
+    set((state) => {
+      const updatedElements = state[propertyName].map((element) => (
+        element.id === id ? { ...element, ...semanticUpdates } : element
+      ));
+      const updatedElement = updatedElements.find((element) => element.id === id);
+      const activeDiagram = state.diagrams.find(
+        (diagram) => diagram.id === state.currentDiagram
+      );
+      const diagramElement = activeDiagram?.elements.find((element) => element.id === id);
 
       if (state.debugMode && updatedElement) {
         console.log('[BAC4 Debug] Element updated:', updatedElement);
       }
 
       return {
-        [propertyName]: updatedArray,
-        selectedElement: newSelectedElement,
+        [propertyName]: updatedElements,
+        selectedElement: state.selectedElement?.id === id && updatedElement
+          ? { ...updatedElement, position: diagramElement?.position }
+          : state.selectedElement,
       };
     });
+
+    return true;
   },
 
   // Delete element
   deleteElement: (type, id) => {
-    const propertyName = getPropertyName(type);
-    set((state) => ({
-      [propertyName]: state[propertyName].filter((el) => el.id !== id),
-      relationships: state.relationships.filter(
-        (rel) => rel.from !== id && rel.to !== id
-      ),
-    }));
+    set((state) => {
+      const diagrams = state.diagrams.map((diagram) => {
+        if (diagram.id !== state.currentDiagram) {
+          return diagram;
+        }
+
+        const elements = diagram.elements.filter((element) => element.id !== id);
+        const relationships = diagram.relationships.filter((member) => {
+          const relationship = state.relationships.find(
+            (candidate) => candidate.id === member.id
+          );
+
+          return relationship && relationship.from !== id && relationship.to !== id;
+        });
+
+        return { ...diagram, elements, relationships };
+      });
+      const nextState = { ...state, diagrams };
+
+      return {
+        ...collectGarbage(nextState),
+        diagrams,
+        selectedElement: null,
+        selectedEdge: null,
+      };
+    });
   },
 
   // Add relationship
   addRelationship: (relationship) => {
-    const newRel = {
-      id: `rel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    const state = get();
+    const activeDiagram = state.diagrams.find(
+      (diagram) => diagram.id === state.currentDiagram
+    );
+    const activeElementIds = new Set(
+      activeDiagram?.elements.map((element) => element.id)
+    );
+
+    if (!activeElementIds.has(relationship?.from) || !activeElementIds.has(relationship?.to)) {
+      return null;
+    }
+
+    const newRelationship = {
+      id: createId('rel'),
       ...relationship,
     };
 
-    set((state) => ({
-      relationships: [...state.relationships, newRel],
+    set((currentState) => ({
+      relationships: [...currentState.relationships, newRelationship],
+      diagrams: currentState.diagrams.map((diagram) => {
+        if (diagram.id !== currentState.currentDiagram) {
+          return diagram;
+        }
+
+        return {
+          ...diagram,
+          relationships: [...diagram.relationships, { id: newRelationship.id }],
+        };
+      }),
     }));
 
-    return newRel;
+    return newRelationship;
   },
 
   // Update relationship
@@ -156,13 +597,12 @@ const useStore = create((set, get) => ({
     }
 
     set((state) => {
-      const updatedRelationships = state.relationships.map((rel) =>
-        rel.id === id ? { ...rel, ...updates } : rel
+      const updatedRelationships = state.relationships.map((relationship) => (
+        relationship.id === id ? { ...relationship, ...updates } : relationship
+      ));
+      const updatedRelationship = updatedRelationships.find(
+        (relationship) => relationship.id === id
       );
-
-      // Also update selectedEdge if it's the one being updated
-      const updatedRelationship = updatedRelationships.find((rel) => rel.id === id);
-      const newSelectedEdge = state.selectedEdge?.id === id ? updatedRelationship : state.selectedEdge;
 
       if (state.debugMode && updatedRelationship) {
         console.log('[BAC4 Debug] Relationship updated:', updatedRelationship);
@@ -170,74 +610,273 @@ const useStore = create((set, get) => ({
 
       return {
         relationships: updatedRelationships,
-        selectedEdge: newSelectedEdge,
+        selectedEdge: state.selectedEdge?.id === id
+          ? updatedRelationship
+          : state.selectedEdge,
       };
     });
   },
 
   // Delete relationship
   deleteRelationship: (id) => {
-    set((state) => ({
-      relationships: state.relationships.filter((rel) => rel.id !== id),
-    }));
+    set((state) => {
+      const diagrams = state.diagrams.map((diagram) => {
+        if (diagram.id !== state.currentDiagram) {
+          return diagram;
+        }
+
+        return {
+          ...diagram,
+          relationships: diagram.relationships.filter(
+            (relationship) => relationship.id !== id
+          ),
+        };
+      });
+      const nextState = { ...state, diagrams };
+
+      return {
+        ...collectGarbage(nextState),
+        diagrams,
+        selectedEdge: null,
+      };
+    });
+  },
+
+  // Reuse a shared element in the active diagram
+  replaceElementInCurrentDiagram: (oldId, replacementId) => {
+    set((state) => {
+      const replacementElement = getStoredElements(state).find(
+        (element) => element.id === replacementId
+      );
+      const activeDiagram = state.diagrams.find(
+        (diagram) => diagram.id === state.currentDiagram
+      );
+      const oldElement = activeDiagram?.elements.find((element) => element.id === oldId);
+
+      if (
+        !replacementElement ||
+        !oldElement ||
+        activeDiagram.elements.some((element) => element.id === replacementId)
+      ) {
+        return state;
+      }
+
+      const diagrams = state.diagrams.map((diagram) => {
+        if (diagram.id !== state.currentDiagram) {
+          return diagram;
+        }
+
+        return {
+          ...diagram,
+          elements: diagram.elements.map((element) => (
+            element.id === oldId
+              ? { id: replacementId, position: oldElement.position }
+              : element
+          )),
+          relationships: diagram.relationships.filter((member) => {
+            const relationship = state.relationships.find(
+              (candidate) => candidate.id === member.id
+            );
+
+            return relationship && relationship.from !== oldId && relationship.to !== oldId;
+          }),
+        };
+      });
+      const nextState = { ...state, diagrams };
+
+      return {
+        ...collectGarbage(nextState),
+        diagrams,
+        selectedElement: {
+          ...replacementElement,
+          position: oldElement.position,
+        },
+        selectedEdge: null,
+      };
+    });
+  },
+
+  // Reuse a shared relationship in the active diagram
+  replaceRelationshipInCurrentDiagram: (oldId, replacementId) => {
+    set((state) => {
+      const activeDiagram = state.diagrams.find(
+        (diagram) => diagram.id === state.currentDiagram
+      );
+      const replacementRelationship = state.relationships.find(
+        (relationship) => relationship.id === replacementId
+      );
+      const activeElementIds = new Set(
+        activeDiagram?.elements.map((element) => element.id)
+      );
+
+      if (
+        !replacementRelationship ||
+        !activeDiagram?.relationships.some((relationship) => relationship.id === oldId) ||
+        activeDiagram.relationships.some((relationship) => relationship.id === replacementId) ||
+        !activeElementIds.has(replacementRelationship.from) ||
+        !activeElementIds.has(replacementRelationship.to)
+      ) {
+        return state;
+      }
+
+      const diagrams = state.diagrams.map((diagram) => {
+        if (diagram.id !== state.currentDiagram) {
+          return diagram;
+        }
+
+        return {
+          ...diagram,
+          relationships: diagram.relationships.map((relationship) => (
+            relationship.id === oldId ? { id: replacementId } : relationship
+          )),
+        };
+      });
+      const nextState = { ...state, diagrams };
+
+      return {
+        ...collectGarbage(nextState),
+        diagrams,
+        selectedEdge: replacementRelationship,
+        selectedElement: null,
+      };
+    });
   },
 
   // Get all elements
   getAllElements: () => {
-    const state = get();
-    return [
-      ...state.systems,
-      ...state.containers,
-      ...state.components,
-      ...state.people,
-      ...state.externalSystems,
-    ];
+    return getStoredElements(get());
   },
 
   // Get element by id
   getElementById: (id) => {
-    const elements = get().getAllElements();
-    return elements.find((el) => el.id === id);
+    return getStoredElements(get()).find((element) => element.id === id);
   },
 
-  // Clear all data
+  // Get elements in the active diagram
+  getAllCurrentDiagramElements: () => {
+    const state = get();
+    const activeDiagram = state.diagrams.find(
+      (diagram) => diagram.id === state.currentDiagram
+    );
+    const elementsById = new Map(
+      getStoredElements(state).map((element) => [element.id, element])
+    );
+
+    return (activeDiagram?.elements || []).flatMap((member) => {
+      const element = elementsById.get(member.id);
+
+      if (!element) {
+        return [];
+      }
+
+      return [{ ...element, position: { ...member.position } }];
+    });
+  },
+
+  // Get visible elements based on active diagram
+  getVisibleElements: () => {
+    return get().getAllCurrentDiagramElements();
+  },
+
+  // Get relationships in the active diagram
+  getCurrentDiagramRelationships: () => {
+    const state = get();
+    const activeDiagram = state.diagrams.find(
+      (diagram) => diagram.id === state.currentDiagram
+    );
+    const relationshipsById = new Map(
+      state.relationships.map((relationship) => [relationship.id, relationship])
+    );
+    const activeElementIds = new Set(
+      activeDiagram?.elements.map((element) => element.id)
+    );
+
+    return (activeDiagram?.relationships || []).flatMap((member) => {
+      const relationship = relationshipsById.get(member.id);
+
+      if (
+        !relationship ||
+        !activeElementIds.has(relationship.from) ||
+        !activeElementIds.has(relationship.to)
+      ) {
+        return [];
+      }
+
+      return [relationship];
+    });
+  },
+
+  // Clear active diagram
   clearAll: () => {
-    set({
-      systems: [],
-      containers: [],
-      components: [],
-      people: [],
-      externalSystems: [],
-      relationships: [],
-      selectedElement: null,
-      warnings: [],
+    set((state) => {
+      const diagrams = state.diagrams.map((diagram) => {
+        if (diagram.id !== state.currentDiagram) {
+          return diagram;
+        }
+
+        return { ...diagram, elements: [], relationships: [] };
+      });
+      const nextState = { ...state, diagrams };
+
+      return {
+        ...collectGarbage(nextState),
+        diagrams,
+        selectedElement: null,
+        selectedEdge: null,
+        warnings: [],
+      };
     });
   },
 
   // Import model
   importModel: (model) => {
-    set({
-      metadata: model.metadata || get().metadata,
-      systems: model.systems || [],
-      containers: model.containers || [],
-      components: model.components || [],
-      people: model.people || [],
-      externalSystems: model.externalSystems || [],
-      relationships: model.relationships || [],
-    });
+    set(normalizeModel(model));
   },
 
   // Export model
   exportModel: () => {
     const state = get();
+
     return {
       metadata: state.metadata,
-      systems: state.systems,
-      containers: state.containers,
-      components: state.components,
-      people: state.people,
-      externalSystems: state.externalSystems,
+      currentDiagram: state.currentDiagram,
+      diagrams: state.diagrams.map((diagram) => ({
+        id: diagram.id,
+        name: diagram.name,
+        level: diagram.level,
+        elements: diagram.elements.map((element) => ({
+          id: element.id,
+          position: { ...element.position },
+        })),
+        relationships: diagram.relationships.map((relationship) => ({
+          id: relationship.id,
+        })),
+      })),
+      systems: state.systems.map(withoutPosition),
+      containers: state.containers.map(withoutPosition),
+      components: state.components.map(withoutPosition),
+      people: state.people.map(withoutPosition),
+      externalSystems: state.externalSystems.map(withoutPosition),
       relationships: state.relationships,
+    };
+  },
+
+  // Export active diagram as a standalone model
+  exportCurrentDiagramModel: () => {
+    const state = get();
+    const elements = state.getAllCurrentDiagramElements();
+    const elementIds = new Set(elements.map((element) => element.id));
+
+    return {
+      metadata: state.metadata,
+      systems: elements.filter((element) => element.type === 'system'),
+      containers: elements.filter((element) => element.type === 'container'),
+      components: elements.filter((element) => element.type === 'component'),
+      people: elements.filter((element) => element.type === 'person'),
+      externalSystems: elements.filter((element) => element.type === 'externalSystem'),
+      relationships: state.getCurrentDiagramRelationships().filter((relationship) => (
+        elementIds.has(relationship.from) && elementIds.has(relationship.to)
+      )),
     };
   },
 
@@ -269,22 +908,22 @@ const useStore = create((set, get) => ({
     });
 
     // Check for orphaned relationships
-    const allElements = state.getAllElements();
-    const elementIds = new Set(allElements.map((el) => el.id));
+    const elements = state.getAllElements();
+    const elementIds = new Set(elements.map((element) => element.id));
 
-    state.relationships.forEach((rel) => {
-      if (!elementIds.has(rel.from)) {
+    state.relationships.forEach((relationship) => {
+      if (!elementIds.has(relationship.from)) {
         warnings.push({
           type: 'error',
-          message: `Relationship references non-existent source element: ${rel.from}`,
-          elementId: rel.id,
+          message: `Relationship references non-existent source element: ${relationship.from}`,
+          elementId: relationship.id,
         });
       }
-      if (!elementIds.has(rel.to)) {
+      if (!elementIds.has(relationship.to)) {
         warnings.push({
           type: 'error',
-          message: `Relationship references non-existent target element: ${rel.to}`,
-          elementId: rel.id,
+          message: `Relationship references non-existent target element: ${relationship.to}`,
+          elementId: relationship.id,
         });
       }
     });
@@ -300,25 +939,6 @@ const useStore = create((set, get) => ({
 
     set({ warnings });
     return warnings;
-  },
-
-  // Get visible elements based on current level
-  getVisibleElements: () => {
-    const state = get();
-    const level = state.currentLevel;
-
-    switch (level) {
-      case 'context':
-        return [...state.systems, ...state.people, ...state.externalSystems];
-      case 'container':
-        return [...state.systems, ...state.containers, ...state.people, ...state.externalSystems];
-      case 'component':
-        return [...state.containers, ...state.components, ...state.people];
-      case 'code':
-        return [...state.components];
-      default:
-        return state.getAllElements();
-    }
   },
 }));
 

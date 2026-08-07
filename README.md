@@ -31,7 +31,7 @@ An interactive web-based C4 modelling tool built with React that allows architec
 - **Container Level**: Shows systems, containers, people, and external systems
 - **Component Level**: Shows containers, components, and people
 - **Code Level**: Shows components only
-- Automatic level switching when adding elements to ensure visibility
+- Adding elements preserves the active diagram's level
 - Level selector in header for manual navigation
 
 ### Element Management
@@ -45,6 +45,12 @@ An interactive web-based C4 modelling tool built with React that allows architec
 - **Edit Properties**: Name, description, technology, tags, position
 - **Create Relationships**: Drag between elements to create connections
 - **Delete Elements**: With confirmation dialogue (auto-removes orphaned relationships)
+
+### Multi-Diagram Workspaces
+
+- Elements and relationships are shared records; each diagram owns ordered memberships and its members' positions.
+- The active diagram is projected onto the canvas, so switching restores independent geometry while shared semantic edits remain visible everywhere.
+- BAC4 JSON saves the complete workspace; diagram export formats use the active projection.
 
 ### Model Persistence
 
@@ -109,7 +115,7 @@ The standalone file `bac4-standalone.html` will be created in the root directory
 
 1. **Check Current Level**: Look at the toolbar - it shows "Context Level", "Container Level", etc.
 2. **Click Element Button**: Choose from available element types (toolbar shows only relevant options)
-3. **Element Appears**: Added to canvas and level auto-switches if needed
+3. **Element Appears**: Added to the active diagram
 4. **Position Element**: Drag to desired location
 
 ### Creating Relationships

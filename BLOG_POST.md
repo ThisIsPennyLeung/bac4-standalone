@@ -37,8 +37,8 @@ BAC4 Standalone is an interactive C4 modelling tool that runs entirely in your b
 
 **3. Zero Learning Curve**
 - If you understand C4, you understand the tool
-- Context-aware toolbar shows only relevant element types
-- Auto-switching between abstraction levels
+- The selected **Elements** toolbar tab shows only relevant draggable element types
+- Automatic level switching between abstraction levels
 - Intelligent auto-layout algorithms
 
 ### C4 Element Types
@@ -68,20 +68,17 @@ BAC4 supports all standard C4 element types with distinct visual styling:
 We use Zustand for lightweight, predictable state management:
 
 ```javascript
-// Separate arrays for each C4 element type
 {
-  systems: [],
-  containers: [],
-  components: [],
-  people: [],
-  externalSystems: [],
+  currentDiagram: 'diagram-…',
+  diagrams: [{ id, name, level, elementIds, relationshipIds }],
+  systems: [], containers: [], components: [], people: [], externalSystems: [],
   relationships: [],
   currentLevel: 'context',
   selectedElement: null
 }
 ```
 
-Key decision: Individual array subscriptions prevent re-render cascades while maintaining reactivity.
+Global element and relationship records are deduplicated. Each diagram owns only membership IDs, so switching diagrams restores a focused projection while edits to a shared record remain visible everywhere it is reused. Legacy flat imports normalize into one diagram; invalid membership references are dropped rather than recreated.
 
 ### Level-Aware Filtering
 
@@ -94,7 +91,7 @@ The tool enforces C4 level semantics:
 | **Component** | Containers, Components, People |
 | **Code** | Components only |
 
-When you add an element, the system automatically switches to an appropriate level for visibility. The toolbar dynamically shows only relevant element types for your current level.
+When you add an element, the system automatically switches to an appropriate level for visibility. The toolbar's **Elements** tab is selected by default and dynamically shows only relevant draggable element types for your current level.
 
 | Context Level | Container Level | Component Level |
 |:-------------:|:---------------:|:---------------:|
@@ -109,7 +106,7 @@ Each export format follows a consistent pipeline:
 Model (Zustand) → Transform → Format → Download
 ```
 
-**JSON Export**: Direct serialization of the model state—ideal for backup and import.
+**JSON Export**: BAC4 JSON serializes the complete workspace: metadata, current diagram, diagram memberships, and global records. Structurizr JSON uses the same complete model.
 
 **PlantUML Export**: Transforms model into C4-PlantUML syntax:
 ```plantuml
@@ -138,11 +135,7 @@ C4Container
   Rel(api, email, "Sends email via", "SMTP")
 ```
 
-**Markdown Export**: Structured documentation with tables—perfect for Confluence, wikis, or README files.
-
-**HTML Export**: Self-contained document with metadata, element tables, relationships, and embedded PlantUML code.
-
-**PNG/SVG Export**: Visual snapshots using html-to-image library for presentations and documentation.
+**Diagram Exports**: PlantUML, Mermaid, Markdown, HTML, PNG, SVG, and Draw.io receive only the active diagram projection. This prevents hidden or unrelated workspace records from leaking into a diagram export.
 
 ![Export Menu](e2e/docs/screenshots/export-menu-open-chromium-darwin.png)
 *Seven export formats available from the Export dropdown*
