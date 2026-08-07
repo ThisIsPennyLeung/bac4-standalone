@@ -267,6 +267,13 @@ Before committing changes, test these scenarios:
 - [ ] Duplicate names switch and delete independently by stable ID
 - [ ] Canceling deletion preserves the diagram; deleting the last diagram creates an empty context diagram
 
+### Content Reuse
+- [ ] Reuse controls keep IDs read-only and autofocus the search field
+- [ ] Element reuse searches name and ID, allowing only same-type records outside the active diagram
+- [ ] Relationship reuse searches endpoint names, description, and ID with active-endpoint restrictions
+- [ ] Escape, outside click, and focus loss close reuse without changing membership
+- [ ] Replacements refresh selection and preserve records shared by another diagram
+
 ### Persistence
 - [ ] Make changes - refresh page - verify changes persist
 - [ ] Export model - import model - verify all data preserved

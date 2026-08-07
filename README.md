@@ -56,6 +56,10 @@ An interactive web-based C4 modelling tool built with React that allows architec
 
 The toolbar lists **Diagrams** before **Elements**, while **Elements** remains the default panel. Add Diagram creates and selects a default-named diagram at the current level. Select a row to switch by stable ID; duplicate names remain independent. Delete confirms before removing a diagram and only garbage-collects records no remaining diagram references.
 
+### Reusing Stored Content
+
+The Properties panel keeps record IDs immutable. Use the reuse control beside an element or relationship ID to search stored content and replace only the active diagram membership. Element candidates must have the same type; relationship candidates require both endpoints in the active diagram. Replacing an element removes that diagram's incident relationship memberships, while shared records remain until no diagram references them.
+
 ### Model Persistence
 
 - **Export Formats**:

@@ -84,6 +84,10 @@ Global element and relationship records are deduplicated. Each diagram owns only
 
 The toolbar keeps the **Elements** palette open initially, with a preceding **Diagrams** tab for workspace navigation. Adding a diagram selects a current-level view; selecting and deleting rows use stable IDs, so duplicate diagram names are unambiguous. Header level changes are likewise non-destructive: they create a new focused diagram instead of clearing the previous one.
 
+### Reusing Shared Content
+
+The properties panel can replace a placeholder membership with a stored element or relationship. The picker searches names and IDs, restricts elements to the same C4 type and relationships to active endpoints, and leaves immutable record IDs untouched. Replacement updates the active diagram atomically and garbage-collects only records no diagram still references.
+
 ### Level-Aware Filtering
 
 The tool enforces C4 level semantics:

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, X, Trash2 } from 'lucide-react';
+import Dropdown from './shared/dropdown';
 import useStore from '../store';
 
 const PropertiesPanel = () => {
@@ -11,7 +12,14 @@ const PropertiesPanel = () => {
     updateElement,
     deleteElement,
     updateRelationship,
-    deleteRelationship
+    deleteRelationship,
+    getAllElements,
+    getAllCurrentDiagramElements,
+    getCurrentDiagramRelationships,
+    getElementById,
+    replaceElementInCurrentDiagram,
+    replaceRelationshipInCurrentDiagram,
+    relationships,
   } = useStore();
 
   const [formData, setFormData] = useState({
@@ -27,6 +35,44 @@ const PropertiesPanel = () => {
     arrowDirection: 'right',
     lineStyle: 'solid',
   });
+
+  const [reuseMode, setReuseMode] = useState(null);
+  const [reuseQuery, setReuseQuery] = useState('');
+
+  const closeReusePicker = () => {
+    setReuseQuery('');
+    setReuseMode(null);
+  };
+
+  const currentElementIds = new Set(getAllCurrentDiagramElements().map((element) => element.id));
+  const currentRelationshipIds = new Set(getCurrentDiagramRelationships().map((relationship) => relationship.id));
+  const elementCandidates = selectedElement
+    ? getAllElements()
+        .filter((element) => element.type === selectedElement.type && !currentElementIds.has(element.id))
+        .map((element) => ({
+          id: element.id,
+          item: element,
+          searchText: `${element.name || ''} ${element.id}`,
+        }))
+    : [];
+  const relationshipCandidates = selectedEdge
+    ? relationships
+        .filter((relationship) => !currentRelationshipIds.has(relationship.id))
+        .filter((relationship) => currentElementIds.has(relationship.from) && currentElementIds.has(relationship.to))
+        .map((relationship) => {
+          const source = getElementById(relationship.from);
+          const target = getElementById(relationship.to);
+          const sourceName = source?.name || relationship.from;
+          const targetName = target?.name || relationship.to;
+          const description = relationship.description ? ` — ${relationship.description}` : '';
+          return {
+            id: relationship.id,
+            item: relationship,
+            label: `${sourceName} → ${targetName}${description}`,
+            searchText: `${relationship.id} ${relationship.description || ''} ${sourceName} ${targetName}`,
+          };
+        })
+    : [];
 
   useEffect(() => {
     if (selectedElement && selectedElement.id) {
@@ -140,14 +186,42 @@ const PropertiesPanel = () => {
         </div>
 
         <div className="space-y-4">
-          {/* Relationship ID */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
               ID
             </label>
-            <div className="px-3 py-2 bg-gray-100 rounded text-xs text-gray-600 font-mono break-all">
-              {selectedEdge.id}
-            </div>
+            {reuseMode === 'relationship' ? (
+              <Dropdown
+                candidates={relationshipCandidates}
+                query={reuseQuery}
+                onQueryChange={setReuseQuery}
+                onSelect={(candidate) => {
+                  replaceRelationshipInCurrentDiagram(selectedEdge.id, candidate.id);
+                  closeReusePicker();
+                }}
+                onClose={closeReusePicker}
+                renderCandidate={(candidate) => (
+                  <div>
+                    <span className="block">{candidate.label}</span>
+                    <span className="block text-xs text-gray-500 font-mono">{candidate.id}</span>
+                  </div>
+                )}
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 px-3 py-2 bg-gray-100 rounded text-xs text-gray-600 font-mono break-all">
+                  {selectedEdge.id}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Reuse existing relationship"
+                  onClick={() => setReuseMode('relationship')}
+                  className="p-2 rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
+                >
+                  <ArrowLeftRight className="w-4 h-4" aria-hidden="true" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Description/Label */}
@@ -285,14 +359,42 @@ const PropertiesPanel = () => {
           </div>
         </div>
 
-        {/* Element ID */}
         <div>
           <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">
             ID
           </label>
-          <div className="px-3 py-2 bg-gray-100 rounded text-xs text-gray-600 font-mono break-all">
-            {selectedElement.id}
-          </div>
+          {reuseMode === 'element' ? (
+            <Dropdown
+              candidates={elementCandidates}
+              query={reuseQuery}
+              onQueryChange={setReuseQuery}
+              onSelect={(candidate) => {
+                replaceElementInCurrentDiagram(selectedElement.id, candidate.id);
+                closeReusePicker();
+              }}
+              onClose={closeReusePicker}
+              renderCandidate={(candidate) => (
+                <div>
+                  <span className="block">{candidate.item.name || candidate.id}</span>
+                  <span className="block text-xs text-gray-500 font-mono">{candidate.id}</span>
+                </div>
+              )}
+            />
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 px-3 py-2 bg-gray-100 rounded text-xs text-gray-600 font-mono break-all">
+                {selectedElement.id}
+              </div>
+              <button
+                type="button"
+                aria-label="Reuse existing element"
+                onClick={() => setReuseMode('element')}
+                className="p-2 rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                <ArrowLeftRight className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Name */}

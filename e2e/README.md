@@ -68,6 +68,10 @@ It shows draggable element types based on the current C4 level:
 
 The **Diagrams** tab appears before **Elements**, but **Elements** remains selected when the application opens. The diagram list follows store order. Add Diagram immediately selects a current-level diagram; row selection restores the diagram by ID. Rows include separate delete controls, and duplicate names are intentionally supported.
 
+### Content Reuse
+
+Properties panels provide a reuse control beside immutable element and relationship IDs. The search picker filters stored candidates by C4 type or active endpoints, respectively. Selecting a result atomically replaces active-diagram membership; Escape, focus loss, or outside click leaves the original ID unchanged.
+
 ### Element Types
 
 BAC4 supports all C4 element types with distinct visual styling:
