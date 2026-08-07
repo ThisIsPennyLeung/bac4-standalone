@@ -10,11 +10,15 @@ export type ElementType = 'system' | 'container' | 'component' | 'person' | 'ext
 export class ToolbarPage extends BasePage {
   readonly sidebar: Locator;
   readonly tabList: Locator;
+  readonly diagramsTab: Locator;
   readonly elementsTab: Locator;
+  readonly diagramsPanel: Locator;
   readonly elementsPanel: Locator;
   readonly title: Locator;
   readonly levelLabel: Locator;
   readonly quickTips: Locator;
+  readonly addDiagramButton: Locator;
+  readonly diagramLevelMenu: Locator;
 
   // Element drag sources
   readonly systemElement: Locator;
@@ -32,7 +36,9 @@ export class ToolbarPage extends BasePage {
     // Toolbar is the aside with w-64 class
     this.sidebar = page.locator('aside.w-64');
     this.tabList = this.sidebar.getByRole('tablist', { name: 'Toolbar sections' });
+    this.diagramsTab = this.tabList.getByRole('tab', { name: 'Diagrams' });
     this.elementsTab = this.tabList.getByRole('tab', { name: 'Elements' });
+    this.diagramsPanel = this.sidebar.locator('#toolbar-diagrams-panel');
     this.elementsPanel = this.sidebar.getByRole('tabpanel', { name: 'Elements' });
     this.title = this.sidebar.locator('h2');
     this.levelLabel = this.sidebar.locator('p.text-xs.text-gray-500');
@@ -46,6 +52,8 @@ export class ToolbarPage extends BasePage {
     this.externalSystemElement = this.sidebar.locator('div[draggable="true"]:has-text("External System")');
 
     this.noElementsMessage = this.sidebar.locator('text=No elements can be added');
+    this.addDiagramButton = this.sidebar.getByRole('button', { name: 'Add Diagram' });
+    this.diagramLevelMenu = this.sidebar.getByRole('menu', { name: 'Choose diagram level' });
   }
 
   /**
@@ -93,6 +101,24 @@ export class ToolbarPage extends BasePage {
   async activateElementsTab(): Promise<void> {
     await this.elementsTab.focus();
     await this.page.keyboard.press('Enter');
+  }
+
+  async activateDiagramsTab(): Promise<void> {
+    await this.diagramsTab.focus();
+    await this.page.keyboard.press('Enter');
+  }
+  async createDiagram(level: 'context' | 'container' | 'component' | 'code'): Promise<void> {
+    await this.activateDiagramsTab();
+    await this.addDiagramButton.click();
+    await this.diagramLevelMenu.getByRole('menuitem', {
+      name: level.charAt(0).toUpperCase() + level.slice(1),
+    }).click();
+    await this.activateElementsTab();
+  }
+
+
+  getDiagramSelection(name: string): Locator {
+    return this.diagramsPanel.locator('button').filter({ hasText: name }).first();
   }
 
   /**

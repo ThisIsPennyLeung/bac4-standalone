@@ -18,7 +18,7 @@ test.describe('Toolbar Element Visibility', () => {
     await expect(app.toolbar.elementsPanel).toBeVisible();
     await expect(app.toolbar.systemElement).toBeVisible();
 
-    await app.header.selectLevel('code');
+    await app.toolbar.createDiagram('code');
 
     await expect(app.toolbar.elementsTab).toHaveAttribute('aria-selected', 'true');
     await expect(app.toolbar.componentElement).toBeVisible();
@@ -40,7 +40,7 @@ test.describe('Toolbar Element Visibility', () => {
   });
 
   test('container level shows system, container, person, external system', async () => {
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
 
     expect(await app.toolbar.isElementVisible('system')).toBe(true);
     expect(await app.toolbar.isElementVisible('container')).toBe(true);
@@ -51,7 +51,7 @@ test.describe('Toolbar Element Visibility', () => {
   });
 
   test('component level shows container, component, person', async () => {
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
 
     expect(await app.toolbar.isElementVisible('container')).toBe(true);
     expect(await app.toolbar.isElementVisible('component')).toBe(true);
@@ -62,7 +62,7 @@ test.describe('Toolbar Element Visibility', () => {
   });
 
   test('code level shows only component', async () => {
-    await app.header.selectLevel('code');
+    await app.toolbar.createDiagram('code');
 
     expect(await app.toolbar.isElementVisible('component')).toBe(true);
 
@@ -76,15 +76,15 @@ test.describe('Toolbar Element Visibility', () => {
     let label = await app.toolbar.getCurrentLevelDisplay();
     expect(label).toContain('Context');
 
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
     label = await app.toolbar.getCurrentLevelDisplay();
     expect(label).toContain('Container');
 
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
     label = await app.toolbar.getCurrentLevelDisplay();
     expect(label).toContain('Component');
 
-    await app.header.selectLevel('code');
+    await app.toolbar.createDiagram('code');
     label = await app.toolbar.getCurrentLevelDisplay();
     expect(label).toContain('Code');
   });
@@ -94,7 +94,7 @@ test.describe('Toolbar Element Visibility', () => {
     expect(await app.toolbar.isElementVisible('container')).toBe(false);
 
     // Change to container
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
 
     // Container should now be visible
     expect(await app.toolbar.isElementVisible('container')).toBe(true);
@@ -105,15 +105,15 @@ test.describe('Toolbar Element Visibility', () => {
     expect(await app.toolbar.isQuickTipsVisible()).toBe(true);
 
     // At container
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
     expect(await app.toolbar.isQuickTipsVisible()).toBe(true);
 
     // At component
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
     expect(await app.toolbar.isQuickTipsVisible()).toBe(true);
 
     // At code
-    await app.header.selectLevel('code');
+    await app.toolbar.createDiagram('code');
     expect(await app.toolbar.isQuickTipsVisible()).toBe(true);
   });
 
@@ -131,14 +131,14 @@ test.describe('Toolbar Element Visibility', () => {
     await expect(externalBtn).toHaveClass(/bg-gray/);
 
     // Switch to container level for container button
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
 
     // Check container button has green styling
     const containerBtn = app.toolbar.containerElement;
     await expect(containerBtn).toHaveClass(/bg-green/);
 
     // Switch to component level for component button
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
 
     // Check component button has yellow styling
     const componentBtn = app.toolbar.componentElement;
@@ -155,7 +155,7 @@ test.describe('Toolbar Element Visibility', () => {
     expect(visibleTypes).not.toContain('component');
 
     // Container level
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
     visibleTypes = await app.toolbar.getVisibleElementTypes();
     expect(visibleTypes).toContain('system');
     expect(visibleTypes).toContain('container');
@@ -164,7 +164,7 @@ test.describe('Toolbar Element Visibility', () => {
     expect(visibleTypes).not.toContain('component');
 
     // Component level
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
     visibleTypes = await app.toolbar.getVisibleElementTypes();
     expect(visibleTypes).toContain('container');
     expect(visibleTypes).toContain('component');
@@ -173,7 +173,7 @@ test.describe('Toolbar Element Visibility', () => {
     expect(visibleTypes).not.toContain('externalSystem');
 
     // Code level
-    await app.header.selectLevel('code');
+    await app.toolbar.createDiagram('code');
     visibleTypes = await app.toolbar.getVisibleElementTypes();
     expect(visibleTypes).toEqual(['component']);
   });

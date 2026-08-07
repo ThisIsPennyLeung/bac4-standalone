@@ -154,7 +154,7 @@ export class AppPage extends BasePage {
    */
   async createContainerDiagram(): Promise<void> {
     this.setupDialogAccept();
-    await this.header.selectLevel('container');
+    await this.toolbar.createDiagram('container');
     await this.wait(300);
 
     await this.createSystemElement({ x: 400, y: 100 });

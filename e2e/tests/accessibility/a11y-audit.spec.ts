@@ -109,16 +109,12 @@ test.describe('Accessibility Audit', () => {
     expect(landmarks.aside).toBe(true);
   });
 
-  test('select elements are keyboard accessible', async ({ page }) => {
-    // Level selector should be focusable and operable
-    const levelSelect = app.header.levelSelector;
-
-    await levelSelect.focus();
-    await expect(levelSelect).toBeFocused();
-
-    // Should be able to change with keyboard
+  test('diagram level menu is keyboard accessible', async ({ page }) => {
+    await app.toolbar.activateDiagramsTab();
+    await app.toolbar.addDiagramButton.focus();
+    await expect(app.toolbar.addDiagramButton).toBeFocused();
     await page.keyboard.press('ArrowDown');
-    await page.keyboard.press('Enter');
+    await expect(app.toolbar.diagramLevelMenu).toBeVisible();
   });
 
   test('export menu is accessible', async ({ page }) => {

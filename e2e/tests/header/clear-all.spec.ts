@@ -121,7 +121,7 @@ test.describe('Clear All Functionality', () => {
 
   test('clear all preserves current level', async ({ page }) => {
     // Change to container level
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
 
     // Create elements at container level
     await app.createContainerElement({ x: 300, y: 200 });

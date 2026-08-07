@@ -111,9 +111,10 @@ test.describe('Focus Management', () => {
     await expect(app.canvas.fitViewButton).toBeFocused();
   });
 
-  test('level selector is focusable', async ({ page }) => {
-    await app.header.levelSelector.focus();
-    await expect(app.header.levelSelector).toBeFocused();
+  test('Add Diagram trigger is focusable', async ({ page }) => {
+    await app.toolbar.activateDiagramsTab();
+    await app.toolbar.addDiagramButton.focus();
+    await expect(app.toolbar.addDiagramButton).toBeFocused();
   });
 
   test('export button is focusable', async ({ page }) => {

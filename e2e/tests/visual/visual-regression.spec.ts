@@ -131,7 +131,7 @@ test.describe('Visual Regression Tests', () => {
   });
 
   test('container node styling', async ({ page }) => {
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
     await app.createContainerElement({ x: 400, y: 200 });
     await app.canvas.fitView();
     await app.wait(300);
@@ -143,7 +143,7 @@ test.describe('Visual Regression Tests', () => {
   });
 
   test('component node styling', async ({ page }) => {
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
     await app.createComponentElement({ x: 400, y: 200 });
     await app.canvas.fitView();
     await app.wait(300);
@@ -223,7 +223,7 @@ test.describe('Visual Regression Tests', () => {
   });
 
   test('toolbar at container level', async ({ page }) => {
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
     await app.wait(200);
 
     await expect(app.toolbar.sidebar).toHaveScreenshot('toolbar-container.png', {
@@ -232,7 +232,7 @@ test.describe('Visual Regression Tests', () => {
   });
 
   test('toolbar at component level', async ({ page }) => {
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
     await app.wait(200);
 
     await expect(app.toolbar.sidebar).toHaveScreenshot('toolbar-component.png', {
@@ -241,7 +241,7 @@ test.describe('Visual Regression Tests', () => {
   });
 
   test('toolbar at code level', async ({ page }) => {
-    await app.header.selectLevel('code');
+    await app.toolbar.createDiagram('code');
     await app.wait(200);
 
     await expect(app.toolbar.sidebar).toHaveScreenshot('toolbar-code.png', {

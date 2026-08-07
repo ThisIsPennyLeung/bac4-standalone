@@ -32,7 +32,7 @@ test.describe('Drag and Drop Element Creation', () => {
   });
 
   test('drag container element to canvas at container level', async () => {
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
 
     await app.createContainerElement({ x: 400, y: 300 });
 
@@ -40,7 +40,7 @@ test.describe('Drag and Drop Element Creation', () => {
   });
 
   test('drag component element to canvas at component level', async () => {
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
 
     await app.createComponentElement({ x: 400, y: 300 });
 
@@ -140,11 +140,11 @@ test.describe('Drag and Drop Element Creation', () => {
     expect(await app.toolbar.externalSystemElement.getAttribute('draggable')).toBe('true');
 
     // Container level
-    await app.header.selectLevel('container');
+    await app.toolbar.createDiagram('container');
     expect(await app.toolbar.containerElement.getAttribute('draggable')).toBe('true');
 
     // Component level
-    await app.header.selectLevel('component');
+    await app.toolbar.createDiagram('component');
     expect(await app.toolbar.componentElement.getAttribute('draggable')).toBe('true');
   });
 });

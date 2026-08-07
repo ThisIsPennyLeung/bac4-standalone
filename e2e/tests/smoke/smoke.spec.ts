@@ -19,8 +19,8 @@ test.describe('Smoke Tests', () => {
     // Title
     await expect(page.locator('text=New C4 Model')).toBeVisible();
 
-    // Level selector
-    await expect(app.header.levelSelector).toBeVisible();
+    // Static active-diagram level
+    await expect(app.header.currentLevel).toHaveText('Level: Context');
 
     // Export button
     await expect(app.header.exportButton).toBeVisible();
@@ -83,12 +83,10 @@ test.describe('Smoke Tests', () => {
     await app.canvas.fitViewButton.click();
   });
 
-  test('level selector has all four options', async () => {
-    const levels = await app.header.getAvailableLevels();
-    expect(levels).toContain('Context');
-    expect(levels).toContain('Container');
-    expect(levels).toContain('Component');
-    expect(levels).toContain('Code');
+  test('diagram menu offers all four levels', async () => {
+    await app.toolbar.activateDiagramsTab();
+    await app.toolbar.addDiagramButton.click();
+    await expect(app.toolbar.diagramLevelMenu.getByRole('menuitem')).toHaveCount(4);
   });
 
   test('default level is context', async () => {

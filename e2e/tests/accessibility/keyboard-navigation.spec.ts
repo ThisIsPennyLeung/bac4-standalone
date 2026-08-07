@@ -57,21 +57,13 @@ test.describe('Keyboard Navigation', () => {
     await expect(app.toolbar.elementsPanel).toBeVisible();
   });
 
-  test('Level selector can be changed with keyboard', async ({ page }) => {
-    await app.header.levelSelector.focus();
-
-    const initialLevel = await app.header.getCurrentLevel();
-
-    // Use arrow keys to change selection
+  test('diagram level menu can be changed with keyboard', async ({ page }) => {
+    await app.toolbar.activateDiagramsTab();
+    await app.toolbar.addDiagramButton.focus();
     await page.keyboard.press('ArrowDown');
-
-    // Blur to confirm selection (or it may change immediately)
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Shift+Tab');
-
-    const newLevel = await app.header.getCurrentLevel();
-    // Level should have changed or be different option
-    expect(newLevel === initialLevel || newLevel === 'container').toBe(true);
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    expect(await app.header.getCurrentLevel()).toBe('container');
   });
 
   test('Export menu can be opened with keyboard', async ({ page }) => {

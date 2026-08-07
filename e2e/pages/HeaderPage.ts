@@ -3,15 +3,15 @@ import { BasePage } from './BasePage';
 
 /**
  * Page object for the Header component
- * Handles: title editing, level selector, export/import menus, layout, clear all
+ * Handles: title editing, static diagram level, export/import menus, layout, clear all
  */
 export class HeaderPage extends BasePage {
   // Title elements
   readonly titleDisplay: Locator;
   readonly titleInput: Locator;
 
-  // Level selector
-  readonly levelSelector: Locator;
+  // Active diagram level
+  readonly currentLevel: Locator;
 
   // Export menu
   readonly exportButton: Locator;
@@ -48,8 +48,7 @@ export class HeaderPage extends BasePage {
     this.titleDisplay = page.locator('[title="Double-click to edit title"]');
     this.titleInput = page.locator('header input[type="text"]');
 
-    // Level selector
-    this.levelSelector = page.locator('header select');
+    this.currentLevel = page.getByLabel('Current diagram level');
 
     // Export menu
     this.exportButton = page.locator('button:has-text("Export")');
@@ -131,29 +130,10 @@ export class HeaderPage extends BasePage {
     return await this.titleInput.isVisible();
   }
 
-  // ==================== Level Selector Methods ====================
+  // ==================== Current Level Methods ====================
 
-  /**
-   * Get current C4 level
-   */
   async getCurrentLevel(): Promise<string> {
-    return await this.levelSelector.inputValue();
-  }
-
-  /**
-   * Select a C4 level
-   */
-  async selectLevel(level: 'context' | 'container' | 'component' | 'code'): Promise<void> {
-    await this.levelSelector.selectOption(level);
-    await expect(this.levelSelector).toHaveValue(level);
-  }
-
-  /**
-   * Get all available levels
-   */
-  async getAvailableLevels(): Promise<string[]> {
-    const options = await this.levelSelector.locator('option').allTextContents();
-    return options;
+    return (await this.currentLevel.textContent() || '').replace('Level:', '').trim().toLowerCase();
   }
 
   // ==================== Export Methods ====================
