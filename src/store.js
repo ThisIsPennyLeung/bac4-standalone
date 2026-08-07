@@ -318,22 +318,6 @@ const useStore = create((set, get) => ({
     });
   },
 
-  // Set the active diagram level
-  setCurrentLevel: (level) => {
-    if (!LEVELS.has(level)) {
-      return false;
-    }
-
-    set((state) => ({
-      currentLevel: level,
-      diagrams: state.diagrams.map((diagram) => (
-        diagram.id === state.currentDiagram ? { ...diagram, level } : diagram
-      )),
-    }));
-
-    return true;
-  },
-
   // Add diagram
   addDiagram: (name = DEFAULT_METADATA.name, level = get().currentLevel) => {
     if (!LEVELS.has(level)) {

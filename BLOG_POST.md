@@ -80,6 +80,10 @@ We use Zustand for lightweight, predictable state management:
 
 Global element and relationship records are deduplicated. Each diagram owns only membership IDs, so switching diagrams restores a focused projection while edits to a shared record remain visible everywhere it is reused. Legacy flat imports normalize into one diagram; invalid membership references are dropped rather than recreated.
 
+### Diagram Navigation
+
+The toolbar keeps the **Elements** palette open initially, with a preceding **Diagrams** tab for workspace navigation. Adding a diagram selects a current-level view; selecting and deleting rows use stable IDs, so duplicate diagram names are unambiguous. Header level changes are likewise non-destructive: they create a new focused diagram instead of clearing the previous one.
+
 ### Level-Aware Filtering
 
 The tool enforces C4 level semantics:

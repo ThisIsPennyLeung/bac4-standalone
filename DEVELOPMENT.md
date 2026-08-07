@@ -260,6 +260,13 @@ Before committing changes, test these scenarios:
 - [ ] Import legacy flat data - verify it becomes one valid diagram
 - [ ] Refresh and restore - verify current diagram and all memberships persist
 
+### Diagram Management Toolbar
+- [ ] Elements opens by default while Diagrams precedes it in the tab order
+- [ ] Arrow keys, Home/End, Enter, and Space move focus and activate toolbar tabs
+- [ ] Add Diagram selects a current-level diagram with the default name
+- [ ] Duplicate names switch and delete independently by stable ID
+- [ ] Canceling deletion preserves the diagram; deleting the last diagram creates an empty context diagram
+
 ### Persistence
 - [ ] Make changes - refresh page - verify changes persist
 - [ ] Export model - import model - verify all data preserved

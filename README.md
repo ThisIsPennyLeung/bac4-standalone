@@ -32,7 +32,7 @@ An interactive web-based C4 modelling tool built with React that allows architec
 - **Component Level**: Shows containers, components, and people
 - **Code Level**: Shows components only
 - Adding elements preserves the active diagram's level
-- Level selector in header for manual navigation
+- Header text shows the active diagram level
 
 ### Element Management
 
@@ -51,6 +51,10 @@ An interactive web-based C4 modelling tool built with React that allows architec
 - Elements and relationships are shared records; each diagram owns ordered memberships and its members' positions.
 - The active diagram is projected onto the canvas, so switching restores independent geometry while shared semantic edits remain visible everywhere.
 - BAC4 JSON saves the complete workspace; diagram export formats use the active projection.
+
+### Diagram Management
+
+The toolbar lists **Diagrams** before **Elements**, while **Elements** remains the default panel. Add Diagram creates and selects a default-named diagram at the current level. Select a row to switch by stable ID; duplicate names remain independent. Delete confirms before removing a diagram and only garbage-collects records no remaining diagram references.
 
 ### Model Persistence
 
@@ -161,9 +165,9 @@ The standalone file `bac4-standalone.html` will be created in the root directory
    - **Draw.io**: Open in diagrams.net for further editing
 3. **File Downloads**: Automatically with descriptive name
 
-### Working with Levels
+### Working with Diagrams and Levels
 
-The C4 model has 4 abstraction levels. Use the dropdown in the header to switch:
+The C4 model has 4 abstraction levels. Use **Add Diagram** in the toolbar to create and select a diagram at a level; the header mirrors the selected diagram's level.
 
 | Level | Purpose | Shows |
 |-------|---------|-------|
@@ -172,7 +176,7 @@ The C4 model has 4 abstraction levels. Use the dropdown in the header to switch:
 | **Component** | Container internals | Containers, Components, People |
 | **Code** | Implementation detail | Components only |
 
-**Tip:** The toolbar automatically shows only relevant element types for your current level!
+**Tip:** The Elements toolbar shows only relevant element types for the active diagram's level.
 
 ---
 

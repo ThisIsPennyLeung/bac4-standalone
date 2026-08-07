@@ -1,30 +1,18 @@
 import { useState } from 'react';
 import { Download, Upload, FileJson, Settings, FileImage, FileCode, FileText, Layout } from 'lucide-react';
-import useStore, { DEFAULT_METADATA } from '../store';
+import useStore from '../store';
 import { exportAsPNG, exportAsSVG, generatePlantUML, generateMermaid, generateMarkdown, exportAsHTML, exportAsDrawio } from '../utils/exportUtils';
 import { applyHierarchicalLayout, applyGridLayout, applyCircularLayout, applyForceLayout } from '../utils/layoutUtils';
 import { exportToStructurizr, importFromStructurizr } from '../utils/structurizrUtils';
 
 const Header = () => {
-  const { metadata, setMetadata, currentLevel, addDiagram, exportModel, exportCurrentDiagramModel, importModel, clearAll, getAllCurrentDiagramElements, getCurrentDiagramRelationships, updateCurrentDiagramElementPosition } = useStore();
+  const { metadata, setMetadata, currentLevel, exportModel, exportCurrentDiagramModel, importModel, clearAll, getAllCurrentDiagramElements, getCurrentDiagramRelationships, updateCurrentDiagramElementPosition } = useStore();
   const [showSettings, setShowSettings] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(metadata.name);
 
-  const levels = [
-    { value: 'context', label: 'Context' },
-    { value: 'container', label: 'Container' },
-    { value: 'component', label: 'Component' },
-    { value: 'code', label: 'Code' },
-  ];
-
-  const handleLevelChange = (newLevel) => {
-    if (newLevel !== currentLevel) {
-      addDiagram(DEFAULT_METADATA.name, newLevel);
-    }
-  };
 
   const handleExportJSON = () => {
     const model = exportModel();
@@ -213,23 +201,9 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Level Selector */}
-          <div className="flex items-center gap-2">
-            <label htmlFor="level-selector" className="text-sm font-medium text-gray-700">Level:</label>
-            <select
-              id="level-selector"
-              value={currentLevel}
-              onChange={(e) => handleLevelChange(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              aria-label="Select C4 diagram level"
-            >
-              {levels.map((level) => (
-                <option key={level.value} value={level.value}>
-                  {level.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <p className="text-sm font-medium text-gray-700" aria-label="Current diagram level">
+            Level: {currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}
+          </p>
 
           {/* Export/Import Buttons */}
           <div className="flex items-center gap-2">

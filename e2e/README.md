@@ -64,6 +64,10 @@ It shows draggable element types based on the current C4 level:
 3. Drag an element from the toolbar onto the canvas.
 4. The element becomes a member of the active diagram.
 
+### Diagram Management
+
+The **Diagrams** tab appears before **Elements**, but **Elements** remains selected when the application opens. The diagram list follows store order. Add Diagram immediately selects a current-level diagram; row selection restores the diagram by ID. Rows include separate delete controls, and duplicate names are intentionally supported.
+
 ### Element Types
 
 BAC4 supports all C4 element types with distinct visual styling:
