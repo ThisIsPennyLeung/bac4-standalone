@@ -13,7 +13,7 @@ import '@xyflow/react/dist/style.css';
 
 import useStore from './store';
 import C4Node from './components/C4Node';
-import Toolbar from './components/toolbarTab/elementToolbar';
+import Toolbar from './components/Toolbar';
 import PropertiesPanel from './components/PropertiesPanel';
 import Header from './components/Header';
 import { useLocalStorage } from './hooks/useLocalStorage';

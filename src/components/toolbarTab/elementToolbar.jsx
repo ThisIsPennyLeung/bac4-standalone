@@ -1,8 +1,8 @@
 import { Server, Box, Component, User, ExternalLink } from 'lucide-react';
 import useStore from '../../store';
 
-const Toolbar = () => {
-  const { addElement, currentLevel } = useStore();
+const ElementToolbar = () => {
+  const { currentLevel } = useStore();
 
   const tools = [
     {
@@ -42,7 +42,6 @@ const Toolbar = () => {
     },
   ];
 
-  // Filter tools based on current C4 level
   const visibleTools = tools.filter((tool) =>
     tool.visibleAtLevels.includes(currentLevel)
   );
@@ -52,24 +51,20 @@ const Toolbar = () => {
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  // Get level display name
-  const getLevelLabel = () => {
-    const labels = {
-      context: 'Context',
-      container: 'Container',
-      component: 'Component',
-      code: 'Code',
-    };
-    return labels[currentLevel] || currentLevel;
+  const levelLabels = {
+    context: 'Context',
+    container: 'Container',
+    component: 'Component',
+    code: 'Code',
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 p-4">
+    <>
       <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-1">
         Add Elements
       </h2>
       <p className="text-xs text-gray-500 mb-4">
-        {getLevelLabel()} Level
+        {levelLabels[currentLevel] || currentLevel} Level
       </p>
 
       <div className="space-y-2">
@@ -80,7 +75,7 @@ const Toolbar = () => {
               <div
                 key={tool.type}
                 draggable
-                onDragStart={(e) => onDragStart(e, tool.type)}
+                onDragStart={(event) => onDragStart(event, tool.type)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing ${tool.color}`}
               >
                 <Icon className="w-5 h-5" />
@@ -106,8 +101,8 @@ const Toolbar = () => {
           <li>• Use mouse wheel to zoom</li>
         </ul>
       </div>
-    </aside>
+    </>
   );
 };
 
-export default Toolbar;
+export default ElementToolbar;
