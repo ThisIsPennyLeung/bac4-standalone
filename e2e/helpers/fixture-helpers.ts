@@ -119,6 +119,41 @@ export function createEmptyModel(name: string = 'Test Model'): any {
 }
 
 /**
+ * Generate a workspace with two diagrams sharing one global system.
+ */
+export function createWorkspaceModel(name: string = 'Workspace Test'): unknown {
+  return {
+    metadata: { name: 'Context Diagram', version: '1.0', author: 'Test' },
+    currentDiagram: 'diagram-context',
+    diagrams: [
+      {
+        id: 'diagram-context',
+        name: 'Context Diagram',
+        level: 'context',
+        elements: [
+          { id: 'system-1', position: { x: 300, y: 200 } },
+          { id: 'person-1', position: { x: 100, y: 200 } },
+        ],
+        relationships: [{ id: 'rel-1' }],
+      },
+      {
+        id: 'diagram-container',
+        name: 'Container Diagram',
+        level: 'container',
+        elements: [{ id: 'system-1', position: { x: 640, y: 120 } }],
+        relationships: [],
+      },
+    ],
+    systems: [{ id: 'system-1', type: 'system', name }],
+    containers: [],
+    components: [],
+    people: [{ id: 'person-1', type: 'person', name: 'User' }],
+    externalSystems: [],
+    relationships: [{ id: 'rel-1', from: 'person-1', to: 'system-1', description: 'Uses' }],
+  };
+}
+
+/**
  * Generate a context level model with basic elements
  */
 export function createContextModel(name: string = 'Context Test'): any {

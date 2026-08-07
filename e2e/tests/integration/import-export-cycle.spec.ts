@@ -6,9 +6,36 @@ import {
   createContextModel,
   createContainerModel,
   createStructurizrModel,
+  createWorkspaceModel,
 } from '../../helpers/fixture-helpers';
 import * as path from 'path';
 import * as fs from 'fs';
+
+type WorkspaceModel = {
+  currentDiagram: string;
+  diagrams: Array<{
+    id: string;
+    name: string;
+    level: string;
+    elements: Array<{ id: string; position: { x: number; y: number } }>;
+    relationships: Array<{ id: string }>;
+  }>;
+  systems: Array<{ id: string }>;
+  relationships: Array<{ id: string; from: string; to: string }>;
+};
+
+type WorkspaceStore = {
+  importModel: (model: unknown) => void;
+  switchDiagram: (id: string) => boolean;
+  exportModel: () => WorkspaceModel;
+  exportCurrentDiagramModel: () => Pick<WorkspaceModel, 'systems' | 'relationships'>;
+};
+
+declare global {
+  interface Window {
+    __ZUSTAND_STORE__: { getState: () => WorkspaceStore };
+  }
+}
 
 test.describe('Import/Export Roundtrip', () => {
   let app: AppPage;
@@ -267,5 +294,40 @@ test.describe('Import/Export Roundtrip', () => {
 
     expect(await app.canvas.getNodeCount()).toBeGreaterThan(0);
     expect(await app.header.getTitle()).toBe('E-Commerce System');
+  });
+
+  test('workspace import keeps shared records while switching active projections', async ({ page }) => {
+    const workspace = createWorkspaceModel();
+    await page.evaluate((model) => {
+      window.__ZUSTAND_STORE__.getState().importModel(model);
+    }, workspace);
+
+    const result = await page.evaluate(() => {
+      const store = window.__ZUSTAND_STORE__.getState();
+      const firstDiagram = store.exportModel().currentDiagram;
+      const switchedToContainer = store.switchDiagram('diagram-container');
+      const containerProjection = store.exportCurrentDiagramModel();
+      const switchedBack = store.switchDiagram(firstDiagram);
+      const workspaceModel = store.exportModel();
+      const contextProjection = store.exportCurrentDiagramModel();
+
+      return {
+        switchedToContainer,
+        switchedBack,
+        diagramCount: workspaceModel.diagrams.length,
+        storedSystemCount: workspaceModel.systems.length,
+        containerSystemCount: containerProjection.systems.length,
+        containerRelationshipCount: containerProjection.relationships.length,
+        contextRelationshipCount: contextProjection.relationships.length,
+      };
+    });
+
+    expect(result.switchedToContainer).toBe(true);
+    expect(result.switchedBack).toBe(true);
+    expect(result.diagramCount).toBe(2);
+    expect(result.storedSystemCount).toBe(1);
+    expect(result.containerSystemCount).toBe(1);
+    expect(result.containerRelationshipCount).toBe(0);
+    expect(result.contextRelationshipCount).toBe(1);
   });
 });

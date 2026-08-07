@@ -66,57 +66,26 @@ test.describe('Level Selector', () => {
     expect(visibleTypes).toEqual(['component']);
   });
 
-  test('changing level with elements shows confirmation dialog', async ({ page }) => {
-    // Create an element first
+  test('changing level creates an empty diagram without clearing the previous one', async () => {
     await app.createSystemElement({ x: 300, y: 200 });
-
-    // Set up dialog handler to capture the message
-    let dialogMessage = '';
-    page.once('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
-    });
-
-    // Try to change level
-    await app.header.selectLevel('container');
-
-    // Verify confirmation was shown
-    expect(dialogMessage).toContain('clear all elements');
-  });
-
-  test('accepting level change confirmation clears canvas', async ({ page }) => {
-    // Create elements
-    await app.createSystemElement({ x: 300, y: 200 });
-    await app.createPersonElement({ x: 500, y: 200 });
-    expect(await app.canvas.getNodeCount()).toBe(2);
-
-    // Accept the dialog
-    page.once('dialog', (dialog) => dialog.accept());
-
-    // Change level
-    await app.header.selectLevel('container');
-
-    // Canvas should be cleared
-    await app.wait(300);
-    expect(await app.canvas.getNodeCount()).toBe(0);
-  });
-
-  test('cancelling level change keeps current level', async ({ page }) => {
-    // Create an element
-    await app.createSystemElement({ x: 300, y: 200 });
-
-    // Dismiss the dialog
-    page.once('dialog', (dialog) => dialog.dismiss());
-
-    // Try to change level
-    await app.header.selectLevel('container');
-
-    // Should still be at context level
-    const level = await app.header.getCurrentLevel();
-    expect(level).toBe('context');
-
-    // Element should still exist
     expect(await app.canvas.getNodeCount()).toBe(1);
+
+    await app.header.selectLevel('container');
+
+    expect(await app.header.getCurrentLevel()).toBe('container');
+    expect(await app.canvas.getNodeCount()).toBe(0);
+
+    const { content } = await app.header.exportJson();
+    expect(content).toContain('"diagrams"');
+    expect(content).toContain('"currentDiagram"');
+    expect(content).toContain('"systems"');
+  });
+
+  test('choosing the current level is a no-op', async () => {
+    await app.header.selectLevel('context');
+
+    expect(await app.header.getCurrentLevel()).toBe('context');
+    expect(await app.canvas.isEmpty()).toBe(true);
   });
 
   test('level change updates toolbar label', async () => {

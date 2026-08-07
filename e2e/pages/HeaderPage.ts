@@ -145,6 +145,7 @@ export class HeaderPage extends BasePage {
    */
   async selectLevel(level: 'context' | 'container' | 'component' | 'code'): Promise<void> {
     await this.levelSelector.selectOption(level);
+    await expect(this.levelSelector).toHaveValue(level);
   }
 
   /**
