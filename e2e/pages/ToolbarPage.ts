@@ -9,6 +9,9 @@ export type ElementType = 'system' | 'container' | 'component' | 'person' | 'ext
  */
 export class ToolbarPage extends BasePage {
   readonly sidebar: Locator;
+  readonly tabList: Locator;
+  readonly elementsTab: Locator;
+  readonly elementsPanel: Locator;
   readonly title: Locator;
   readonly levelLabel: Locator;
   readonly quickTips: Locator;
@@ -28,6 +31,9 @@ export class ToolbarPage extends BasePage {
 
     // Toolbar is the aside with w-64 class
     this.sidebar = page.locator('aside.w-64');
+    this.tabList = this.sidebar.getByRole('tablist', { name: 'Toolbar sections' });
+    this.elementsTab = this.tabList.getByRole('tab', { name: 'Elements' });
+    this.elementsPanel = this.sidebar.getByRole('tabpanel', { name: 'Elements' });
     this.title = this.sidebar.locator('h2');
     this.levelLabel = this.sidebar.locator('p.text-xs.text-gray-500');
     this.quickTips = this.sidebar.locator('.bg-blue-50');
@@ -82,6 +88,11 @@ export class ToolbarPage extends BasePage {
    */
   async getCurrentLevelDisplay(): Promise<string> {
     return await this.levelLabel.textContent() || '';
+  }
+
+  async activateElementsTab(): Promise<void> {
+    await this.elementsTab.focus();
+    await this.page.keyboard.press('Enter');
   }
 
   /**

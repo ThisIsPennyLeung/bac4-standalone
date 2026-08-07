@@ -47,6 +47,16 @@ test.describe('Keyboard Navigation', () => {
     expect(reachedToolbar).toBe(true);
   });
 
+  test('Elements tab receives focus and activates with keyboard', async ({ page }) => {
+    await app.toolbar.elementsTab.focus();
+    await expect(app.toolbar.elementsTab).toBeFocused();
+
+    await page.keyboard.press('Space');
+
+    await expect(app.toolbar.elementsTab).toHaveAttribute('aria-selected', 'true');
+    await expect(app.toolbar.elementsPanel).toBeVisible();
+  });
+
   test('Level selector can be changed with keyboard', async ({ page }) => {
     await app.header.levelSelector.focus();
 

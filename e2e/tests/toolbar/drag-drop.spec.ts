@@ -123,6 +123,16 @@ test.describe('Drag and Drop Element Creation', () => {
     expect(draggable).toBe('true');
   });
 
+  test('element drag start preserves the C4 element payload', async () => {
+    const payload = await app.toolbar.systemElement.evaluate((element) => {
+      const dataTransfer = new DataTransfer();
+      element.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer }));
+      return dataTransfer.getData('application/c4-element-type');
+    });
+
+    expect(payload).toBe('system');
+  });
+
   test('all element buttons are draggable', async ({ page }) => {
     // Context level elements
     expect(await app.toolbar.systemElement.getAttribute('draggable')).toBe('true');

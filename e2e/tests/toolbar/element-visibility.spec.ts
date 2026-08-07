@@ -11,6 +11,20 @@ test.describe('Toolbar Element Visibility', () => {
     await app.navigate();
   });
 
+  test('Elements tab is selected by default and retains the level-aware palette', async () => {
+    await expect(app.toolbar.tabList).toBeVisible();
+    await expect(app.toolbar.elementsTab).toHaveAttribute('aria-selected', 'true');
+    await expect(app.toolbar.elementsTab).toHaveAttribute('aria-controls', 'toolbar-elements-panel');
+    await expect(app.toolbar.elementsPanel).toBeVisible();
+    await expect(app.toolbar.systemElement).toBeVisible();
+
+    await app.header.selectLevel('code');
+
+    await expect(app.toolbar.elementsTab).toHaveAttribute('aria-selected', 'true');
+    await expect(app.toolbar.componentElement).toBeVisible();
+    await expect(app.toolbar.systemElement).not.toBeVisible();
+  });
+
   test('context level shows system, person, external system', async () => {
     // Verify at context level
     expect(await app.header.getCurrentLevel()).toBe('context');
