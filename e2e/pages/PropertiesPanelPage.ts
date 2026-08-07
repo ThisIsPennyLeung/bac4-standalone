@@ -19,6 +19,12 @@ export class PropertiesPanelPage extends BasePage {
   readonly technologyInput: Locator;
   readonly descriptionTextarea: Locator;
   readonly tagsInput: Locator;
+  readonly reuseElementButton: Locator;
+  readonly reuseRelationshipButton: Locator;
+  readonly reuseSearchInput: Locator;
+  readonly reuseNoResults: Locator;
+  readonly reuseListbox: Locator;
+  readonly reuseOptions: Locator;
 
   // Relationship properties fields
   readonly edgeDescriptionInput: Locator;
@@ -43,6 +49,12 @@ export class PropertiesPanelPage extends BasePage {
     this.technologyInput = this.panel.locator('input').filter({ has: page.locator('[placeholder*="technology" i], [placeholder*="Spring" i]') }).first();
     this.descriptionTextarea = this.panel.locator('textarea').first();
     this.tagsInput = this.panel.locator('input').filter({ has: page.locator('[placeholder*="tag" i]') }).first();
+    this.reuseElementButton = this.panel.getByRole('button', { name: 'Reuse existing element' });
+    this.reuseRelationshipButton = this.panel.getByRole('button', { name: 'Reuse existing relationship' });
+    this.reuseSearchInput = this.panel.locator('input[placeholder="Search stored content"]');
+    this.reuseNoResults = page.getByText('No reusable items found');
+    this.reuseListbox = this.panel.getByRole('listbox');
+    this.reuseOptions = this.reuseListbox.getByRole('option');
 
     // Relationship fields
     this.edgeDescriptionInput = this.panel.locator('input[placeholder*="API" i], input[placeholder*="calls" i]').first();

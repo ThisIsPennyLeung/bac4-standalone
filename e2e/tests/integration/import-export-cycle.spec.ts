@@ -17,8 +17,8 @@ type WorkspaceModel = {
     id: string;
     name: string;
     level: string;
-    elements: Array<{ id: string; position: { x: number; y: number } }>;
-    relationships: Array<{ id: string }>;
+    elementIds: string[];
+    relationshipIds: string[];
   }>;
   systems: Array<{ id: string }>;
   relationships: Array<{ id: string; from: string; to: string }>;
@@ -26,7 +26,11 @@ type WorkspaceModel = {
 
 type WorkspaceStore = {
   importModel: (model: unknown) => void;
+  clearAll: () => void;
+  addElement: (type: string, element: { name: string; position: { x: number; y: number } }) => { id: string; type: string };
+  addDiagram: (name: string, level: string) => { id: string } | null;
   switchDiagram: (id: string) => boolean;
+  setSelectedElement: (element: { id: string; type: string }) => void;
   exportModel: () => WorkspaceModel;
   exportCurrentDiagramModel: () => Pick<WorkspaceModel, 'systems' | 'relationships'>;
 };
